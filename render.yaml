@@ -11,8 +11,8 @@ services:
     runtime: node
     plan: free
     rootDir: backend
-    buildCommand: npm install && npm run build
-    startCommand: npm run db:deploy && npm run start
+    buildCommand: npm install && npx prisma generate --schema=prisma/schema.prisma && npx tsc -p tsconfig.json
+    startCommand: npx prisma migrate deploy --schema=prisma/schema.prisma && node dist/index.js
     healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
@@ -73,8 +73,8 @@ services:
     runtime: node
     plan: free
     rootDir: frontend
-    buildCommand: npm install && npm run build
-    startCommand: npm run start
+    buildCommand: npm install && npx next build
+    startCommand: npx next start -p $PORT
     healthCheckPath: /
     envVars:
       - key: NODE_ENV
