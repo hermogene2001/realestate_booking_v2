@@ -1,0 +1,38 @@
+services:
+  - type: web
+    name: realestate-booking-v2
+    runtime: node
+    plan: starter
+    buildCommand: npm ci && npm run build --workspace=shared && npm run build --workspace=frontend
+    startCommand: npm run start --workspace=frontend
+    healthCheckPath: /
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_PUBLIC_API_URL
+        value: https://realestate-booking-v2-api.onrender.com/api
+
+  - type: web
+    name: realestate-booking-v2-api
+    runtime: node
+    plan: starter
+    buildCommand: npm ci && npm run build --workspace=backend
+    startCommand: npm run db:deploy --workspace=backend && npm run start --workspace=backend
+    healthCheckPath: /api/health
+    disk:
+      name: sqlite-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: DATABASE_URL
+        value: file:/var/data/dev.db
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: FRONTEND_URL
+        value: https://realestate-booking-v2.onrender.com
