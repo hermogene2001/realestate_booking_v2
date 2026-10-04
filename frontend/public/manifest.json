@@ -1,0 +1,48 @@
+{
+  "name": "Kigali Real Estate - Book Properties with Blockchain Security",
+  "short_name": "KigaliRE",
+  "description": "Book premium properties in Kigali with secure blockchain escrow, MoMo payments, and instant confirmation",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0066cc",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icons/icon-192x192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512x512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "categories": ["business", "lifestyle", "travel"],
+  "shortcuts": [
+    {
+      "name": "Browse Properties",
+      "short_name": "Properties",
+      "description": "View available properties",
+      "url": "/properties",
+      "icons": [{ "src": "/icons/search.svg", "sizes": "192x192" }]
+    },
+    {
+      "name": "My Bookings",
+      "short_name": "Bookings",
+      "description": "View your bookings",
+      "url": "/bookings",
+      "icons": [{ "src": "/icons/bookings.svg", "sizes": "192x192" }]
+    },
+    {
+      "name": "Wishlist",
+      "short_name": "Wishlist",
+      "description": "Your saved properties",
+      "url": "/wishlist",
+      "icons": [{ "src": "/icons/wishlist.svg", "sizes": "192x192" }]
+    }
+  ]
+}

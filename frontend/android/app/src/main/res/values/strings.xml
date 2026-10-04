@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Kigali Real Estate</string>
+    <string name="title_activity_main">Kigali Real Estate</string>
+    <string name="package_name">com.kigalirealestate.app</string>
+    <string name="custom_url_scheme">com.kigalirealestate.app</string>
+</resources>

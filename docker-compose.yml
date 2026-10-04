@@ -1,0 +1,85 @@
+version: '3.8'
+
+services:
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: kigali-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - kigali-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      timeout: 5s
+      retries: 5
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: kigali-backend
+    command: ["sh", "-c", "npx prisma migrate deploy --schema=prisma/schema.prisma && node dist/index.js"]
+    environment:
+      DATABASE_URL: file:/app/data/dev.db
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      BLOCKCHAIN_RPC_URL: ${BLOCKCHAIN_RPC_URL}
+      CONTRACT_ADDRESS: ${CONTRACT_ADDRESS}
+      ADMIN_WALLET_ADDRESS: ${ADMIN_WALLET_ADDRESS}
+      ADMIN_WALLET_PRIVATE_KEY: ${ADMIN_WALLET_PRIVATE_KEY}
+      FRONTEND_URL: ${FRONTEND_URL:-http://frontend:3000}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASS: ${SMTP_PASS}
+      SMTP_FROM_EMAIL: ${SMTP_FROM_EMAIL}
+      SENTRY_DSN: ${SENTRY_DSN}
+      RATE_LIMIT_WINDOW_MS: ${RATE_LIMIT_WINDOW_MS}
+      RATE_LIMIT_MAX_REQUESTS: ${RATE_LIMIT_MAX_REQUESTS}
+      LOG_LEVEL: ${LOG_LEVEL}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL}
+      OLLAMA_MODEL: ${OLLAMA_MODEL}
+      OLLAMA_ENABLED: ${OLLAMA_ENABLED}
+      REDIS_ENABLED: ${REDIS_ENABLED}
+      NODE_ENV: production
+    ports:
+      - "5001:5001"
+    volumes:
+      - sqlite_data:/app/data
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - kigali-network
+    restart: unless-stopped
+
+  # Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: kigali-frontend
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://backend:5001/api}
+      API_URL: ${API_URL:-http://backend:5001}
+      NEXT_PUBLIC_CONTRACT_ADDRESS: ${CONTRACT_ADDRESS}
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - kigali-network
+    restart: unless-stopped
+
+volumes:
+  sqlite_data:
+  redis_data:
+
+networks:
+  kigali-network:
+    driver: bridge

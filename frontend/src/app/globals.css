@@ -1,0 +1,160 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+  --foreground: #111827;
+  --background: #f9fafb;
+
+  /* Admin Design System */
+  --admin-sidebar: #0f172a;
+  --admin-sidebar-hover: #1e293b;
+  --admin-sidebar-active: #334155;
+  --admin-sidebar-text: #94a3b8;
+  --admin-sidebar-text-active: #f1f5f9;
+  --admin-sidebar-accent: #3b82f6;
+  --admin-topbar: #ffffff;
+  --admin-content: #f1f5f9;
+  --admin-card: #ffffff;
+  --admin-border: #e2e8f0;
+  --admin-text-primary: #0f172a;
+  --admin-text-secondary: #64748b;
+  --admin-text-muted: #94a3b8;
+
+  /* Admin KPI gradients */
+  --admin-gradient-blue: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  --admin-gradient-emerald: linear-gradient(135deg, #10b981, #059669);
+  --admin-gradient-violet: linear-gradient(135deg, #8b5cf6, #6d28d9);
+  --admin-gradient-amber: linear-gradient(135deg, #f59e0b, #d97706);
+  --admin-gradient-rose: linear-gradient(135deg, #f43f5e, #e11d48);
+  --admin-gradient-cyan: linear-gradient(135deg, #06b6d4, #0891b2);
+
+  /* Admin shadows */
+  --admin-shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --admin-shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.06), 0 1px 2px -1px rgb(0 0 0 / 0.06);
+  --admin-shadow-elevated: 0 4px 6px -1px rgb(0 0 0 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+/* RTL Support */
+[dir="rtl"] {
+  text-align: right;
+}
+
+[dir="rtl"] .flex-row {
+  flex-direction: row-reverse;
+}
+
+[dir="rtl"] .ml-auto {
+  margin-left: 0;
+  margin-right: auto;
+}
+
+[dir="rtl"] .mr-auto {
+  margin-right: 0;
+  margin-left: auto;
+}
+
+[dir="rtl"] .space-x-4 > * + * {
+  --tw-space-x-reverse: 1;
+}
+
+/* Mirror margins and padding for RTL */
+[dir="rtl"] .ml-2 { margin-left: 0; margin-right: 0.5rem; }
+[dir="rtl"] .ml-4 { margin-left: 0; margin-right: 1rem; }
+[dir="rtl"] .mr-2 { margin-right: 0; margin-left: 0.5rem; }
+[dir="rtl"] .mr-4 { margin-right: 0; margin-left: 1rem; }
+[dir="rtl"] .pl-4 { padding-left: 0; padding-right: 1rem; }
+[dir="rtl"] .pr-4 { padding-right: 0; padding-left: 1rem; }
+
+/* Reduced motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Admin-specific utilities */
+@layer components {
+  .admin-card {
+    @apply bg-white rounded-xl border border-slate-200 shadow-sm;
+  }
+  .admin-card-hover {
+    @apply bg-white rounded-xl border border-slate-200 shadow-sm transition-all duration-200 hover:shadow-md hover:border-slate-300;
+  }
+  .admin-badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold tracking-wide;
+  }
+  .admin-table-header {
+    @apply text-xs font-semibold text-slate-500 uppercase tracking-wider;
+  }
+  .admin-input {
+    @apply w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 placeholder-slate-400 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400;
+  }
+  .admin-select {
+    @apply px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 appearance-none cursor-pointer;
+  }
+  .admin-btn-primary {
+    @apply px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg transition-all duration-200 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .admin-btn-secondary {
+    @apply px-4 py-2 bg-white text-slate-700 text-sm font-medium rounded-lg border border-slate-200 transition-all duration-200 hover:bg-slate-50 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-500/10 active:scale-[0.98];
+  }
+  .admin-btn-danger {
+    @apply px-4 py-2 bg-rose-600 text-white text-sm font-medium rounded-lg transition-all duration-200 hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-500/20 active:scale-[0.98];
+  }
+  .admin-btn-ghost {
+    @apply px-3 py-1.5 text-slate-600 text-sm font-medium rounded-lg transition-all duration-200 hover:bg-slate-100 hover:text-slate-900;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* Admin scrollbar */
+.admin-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+.admin-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.admin-scroll::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 2px;
+}
+.admin-scroll::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+::-webkit-scrollbar-thumb {
+  background: #94a3b8;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}

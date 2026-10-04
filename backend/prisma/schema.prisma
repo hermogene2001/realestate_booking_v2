@@ -1,0 +1,708 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  TENANT
+  OWNER
+  ADMIN
+}
+
+enum PropertyStatus {
+  AVAILABLE
+  BOOKED
+  RENTED
+  MAINTENANCE
+  DELISTED
+}
+
+enum BookingStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  LOCKED
+  COMPLETED
+  REFUNDED
+  DISPUTED
+  CANCELLED
+}
+
+enum TransactionType {
+  DEPOSIT
+  REMAINING
+  RELEASE
+  REFUND
+  CANCEL
+  FEE
+}
+
+enum TransactionStatus {
+  PENDING
+  CONFIRMED
+  FAILED
+}
+
+enum NotificationType {
+  BOOKING_CREATED
+  DEPOSIT_CONFIRMED
+  HANDOVER_PENDING
+  FUNDS_RELEASED
+  REFUND_ISSUED
+  REVIEW_RECEIVED
+  PROPERTY_APPROVED
+  PROPERTY_REJECTED
+  FRAUD_ALERT
+  PAYMENT_FAILED
+  TIMEOUT_WARNING
+  DISPUTE_RESOLVED
+  BOOKING_TIMEOUT
+  BOOKING_CANCELLED
+  DOCUMENT_UPLOADED
+  DOCUMENT_APPROVED
+  DOCUMENT_REJECTED
+  KYC_APPROVED
+  KYC_REJECTED
+  BOOKING_ACCEPTED
+  BOOKING_REJECTED
+}
+
+model User {
+  id            Int            @id @default(autoincrement())
+  name          String
+  email         String         @unique
+  phone         String
+  role          Role           @default(TENANT)
+  password      String
+  language      String         @default("en")
+  walletAddress String?        @unique @map("wallet_address")
+  isBanned      Boolean        @default(false) @map("is_banned")
+  isVerified    Boolean        @default(false) @map("is_verified")
+  twoFactorSecret String?      @map("two_factor_secret")
+  twoFactorEnabled Boolean     @default(false) @map("two_factor_enabled")
+  backupCodes   Json?          @map("backup_codes")
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+
+  properties    Property[]
+  bookings      Booking[]
+  reviews       Review[]
+  notifications Notification[]
+  fraudAlerts   FraudAlert[]
+  verification  Verification?
+  favorites     Favorite[]
+  payments      Payment[]
+  sentMessages  Message[]  @relation("SentMessages")
+  receivedMessages Message[] @relation("ReceivedMessages")
+  disputesRaised Dispute[] @relation("DisputesRaised")
+  disputesAgainst Dispute[] @relation("DisputesAgainst")
+  blogPosts     BlogPost[]
+  rewardTokens  RewardToken[]
+  agent         Agent?
+  organizedEvents CommunityEvent[]
+  longTermRentals LongTermRental[]
+  maintenanceTenant MaintenanceRequest[] @relation("MaintenanceTenant")
+  maintenanceAssignee MaintenanceRequest[] @relation("MaintenanceAssignee")
+  reviewedDocuments PropertyDocument[] @relation("DocumentReviewer")
+  propertyShares   PropertyShare[] @relation("PropertyShareOwner")
+  sharePurchases   SharePurchase[]
+  userReputation   UserReputation?
+
+  @@map("users")
+}
+
+model Property {
+  id          Int            @id @default(autoincrement())
+  ownerId     Int            @map("owner_id")
+  title       String
+  description String        
+  location    String
+  district    String
+  lat         Float
+  lng         Float
+  priceEth    String         @map("price_eth")
+  depositEth  String         @map("deposit_eth")
+  images      Json           @default(dbgenerated("'[]'"))
+  bedrooms    Int            @default(1)
+  bathrooms   Int            @default(1)
+  area        Float          @default(0)
+  amenities   Json           @default(dbgenerated("'[]'"))
+  status      PropertyStatus @default(AVAILABLE)
+  isApproved  Boolean        @default(false) @map("is_approved")
+  isVerified  Boolean        @default(false) @map("is_verified")
+  verificationDoc String?    @map("verification_doc")
+  qrCode      String?        @map("qr_code")
+  createdAt   DateTime       @default(now()) @map("created_at")
+  updatedAt   DateTime       @updatedAt @map("updated_at")
+
+  owner       User           @relation(fields: [ownerId], references: [id])
+  bookings    Booking[]
+  reviews     Review[]
+  favorites   Favorite[]
+  availability Availability[]
+  messages    Message[]
+  virtualTours VirtualTour[]
+  smartDevices SmartDevice[]
+  longTermRentals LongTermRental[]
+  maintenanceRequests MaintenanceRequest[]
+  propertyDocuments PropertyDocument[]
+  propertyShares   PropertyShare[]
+
+  @@index([district])
+  @@index([priceEth])
+  @@index([lat, lng])
+  @@map("properties")
+}
+
+model Booking {
+  id                  Int           @id @default(autoincrement())
+  tenantId            Int           @map("tenant_id")
+  propertyId          Int           @map("property_id")
+  status              BookingStatus @default(PENDING)
+  txHash              String?       @map("tx_hash")
+  escrowAmount        String?       @map("escrow_amount")
+  blockchainBookingId Int?          @map("blockchain_booking_id")
+  paymentMethod       String?       @map("payment_method") // ETHEREUM, MOMO, CARD
+  paymentStatus       String?       @default("PENDING") @map("payment_status") // PENDING, COMPLETED, FAILED
+  currency            String?       @default("ETH") @map("currency") // ETH, USD, RWF
+  startDate           DateTime      @map("start_date")
+  endDate             DateTime      @map("end_date")
+  tenantConfirmed     Boolean       @default(false) @map("tenant_confirmed")
+  ownerConfirmed      Boolean       @default(false) @map("owner_confirmed")
+  timeoutAt           DateTime?     @map("timeout_at")
+  promoCodeId         Int?          @map("promo_code_id")
+  discountApplied     Float         @default(0) @map("discount_applied")
+  totalAmount         String?       @map("total_amount")
+  remainingAmount     String?       @map("remaining_amount")
+  remainingPaid       Boolean       @default(false) @map("remaining_paid")
+  remainingTxHash     String?       @map("remaining_tx_hash")
+  fullPaidAt          DateTime?     @map("full_paid_at")
+  createdAt           DateTime      @default(now()) @map("created_at")
+  updatedAt           DateTime      @updatedAt @map("updated_at")
+
+  tenant          User          @relation(fields: [tenantId], references: [id])
+  property        Property      @relation(fields: [propertyId], references: [id])
+  transactions    Transaction[]
+  review          Review?
+  availability    Availability?
+  payment         Payment?
+  dispute         Dispute?
+  insurance       Insurance?
+
+  @@index([tenantId])
+  @@index([propertyId])
+  @@index([status, timeoutAt])
+  @@map("bookings")
+}
+
+model Review {
+  id          Int      @id @default(autoincrement())
+  userId      Int      @map("user_id")
+  propertyId  Int      @map("property_id")
+  bookingId   Int      @unique @map("booking_id")
+  rating      Int
+  comment     String  
+  photos      Json     @default(dbgenerated("'[]'"))
+  ownerReply  String?  @map("owner_reply")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user        User     @relation(fields: [userId], references: [id])
+  property    Property @relation(fields: [propertyId], references: [id])
+  booking     Booking  @relation(fields: [bookingId], references: [id])
+
+  @@index([propertyId])
+  @@map("reviews")
+}
+
+model Notification {
+  id        Int              @id @default(autoincrement())
+  userId    Int              @map("user_id")
+  type      NotificationType
+  message   String
+  metadata  Json?
+  isRead    Boolean          @default(false) @map("is_read")
+  createdAt DateTime         @default(now()) @map("created_at")
+
+  user      User             @relation(fields: [userId], references: [id])
+
+  @@index([userId, isRead])
+  @@map("notifications")
+}
+
+model Transaction {
+  id          Int               @id @default(autoincrement())
+  bookingId   Int               @map("booking_id")
+  txHash      String            @unique @map("tx_hash")
+  type        TransactionType
+  amount      String
+  fromAddress String            @map("from_address")
+  toAddress   String            @map("to_address")
+  status      TransactionStatus @default(PENDING)
+  createdAt   DateTime          @default(now()) @map("created_at")
+
+  booking     Booking           @relation(fields: [bookingId], references: [id])
+
+  @@map("transactions")
+}
+
+model FraudAlert {
+  id          Int      @id @default(autoincrement())
+  userId      Int?     @map("user_id")
+  alertType   String   @map("alert_type")
+  severity    String   @default("medium")
+  description String  
+  metadata    Json?
+  isResolved  Boolean  @default(false) @map("is_resolved")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user        User?    @relation(fields: [userId], references: [id])
+
+  @@map("fraud_alerts")
+}
+
+model Verification {
+  id              Int      @id @default(autoincrement())
+  userId          Int      @unique @map("user_id")
+  status          String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  idDocFront      String   @map("id_doc_front")
+  idDocBack       String   @map("id_doc_back")
+  selfie          String?
+  verifiedAt      DateTime? @map("verified_at")
+  rejectionReason String?  @map("rejection_reason")
+  reviewedBy      Int?     @map("reviewed_by")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  user            User     @relation(fields: [userId], references: [id])
+
+  @@index([status])
+  @@map("verifications")
+}
+
+model Favorite {
+  id         Int      @id @default(autoincrement())
+  userId     Int      @map("user_id")
+  propertyId Int      @map("property_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, propertyId])
+  @@index([userId])
+  @@index([propertyId])
+  @@map("favorites")
+}
+
+model Availability {
+  id         Int      @id @default(autoincrement())
+  propertyId Int      @map("property_id")
+  date       DateTime @map("date") // Start of available period
+  endDate    DateTime @map("end_date") // End of available period
+  isBooked   Boolean  @default(false) @map("is_booked")
+  bookingId  Int?     @unique @map("booking_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  booking  Booking? @relation(fields: [bookingId], references: [id])
+
+  @@index([propertyId])
+  @@index([date])
+  @@index([isBooked])
+  @@map("availabilities")
+}
+
+model Payment {
+  id              Int      @id @default(autoincrement())
+  bookingId       Int      @unique @map("booking_id")
+  userId          Int      @map("user_id")
+  amount          Float
+  currency        String   @default("ETH") // ETH, USD, RWF
+  paymentMethod   String   @map("payment_method") // ETHEREUM, MOMO, CARD
+  status          String   @default("PENDING") // PENDING, COMPLETED, FAILED, REFUNDED
+  transactionId   String?  @unique @map("transaction_id")
+  providerRef     String?  @map("provider_ref") // MoMo/Stripe reference
+  metadata        Json?    @default(dbgenerated("'{}'"))
+  paidAt          DateTime? @map("paid_at")
+  refundedAt      DateTime? @map("refunded_at")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  booking         Booking  @relation(fields: [bookingId], references: [id])
+  user            User     @relation(fields: [userId], references: [id])
+
+  @@index([bookingId])
+  @@index([userId])
+  @@index([status])
+  @@index([paymentMethod])
+  @@map("payments")
+}
+
+model Message {
+  id          Int      @id @default(autoincrement())
+  senderId    Int      @map("sender_id")
+  receiverId  Int      @map("receiver_id")
+  propertyId  Int?     @map("property_id")
+  content     String  
+  isRead      Boolean  @default(false) @map("is_read")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  sender      User     @relation("SentMessages", fields: [senderId], references: [id])
+  receiver    User     @relation("ReceivedMessages", fields: [receiverId], references: [id])
+  property    Property? @relation(fields: [propertyId], references: [id])
+
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([propertyId])
+  @@index([isRead])
+  @@map("messages")
+}
+
+model PromoCode {
+  id          Int      @id @default(autoincrement())
+  code        String   @unique
+  description String? 
+  discountPercent Float @default(0) @map("discount_percent")
+  discountAmount  Float @default(0) @map("discount_amount")
+  maxUses     Int      @default(0) @map("max_uses")
+  usedCount   Int      @default(0) @map("used_count")
+  validFrom   DateTime @default(now()) @map("valid_from")
+  validUntil  DateTime? @map("valid_until")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([code])
+  @@index([isActive])
+  @@map("promo_codes")
+}
+
+model Dispute {
+  id          Int      @id @default(autoincrement())
+  bookingId   Int      @unique @map("booking_id")
+  raisedBy    Int      @map("raised_by")
+  against     Int      @map("against")
+  reason      String  
+  status      String   @default("OPEN")
+  resolution  String? 
+  resolvedBy  Int?     @map("resolved_by")
+  resolvedAt  DateTime? @map("resolved_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  booking     Booking  @relation(fields: [bookingId], references: [id])
+  raisedByUser User   @relation("DisputesRaised", fields: [raisedBy], references: [id])
+  againstUser  User   @relation("DisputesAgainst", fields: [against], references: [id])
+
+  @@index([bookingId])
+  @@index([status])
+  @@index([raisedBy])
+  @@map("disputes")
+}
+
+model BlogPost {
+  id          Int      @id @default(autoincrement())
+  title       String
+  slug        String   @unique
+  content     String  
+  excerpt     String? 
+  coverImage  String?  @map("cover_image")
+  authorId    Int      @map("author_id")
+  status      String   @default("DRAFT")
+  publishedAt DateTime? @map("published_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  author      User     @relation(fields: [authorId], references: [id])
+
+  @@index([slug])
+  @@index([status])
+  @@index([authorId])
+  @@map("blog_posts")
+}
+
+model Insurance {
+  id              Int      @id @default(autoincrement())
+  bookingId       Int      @unique @map("booking_id")
+  provider        String
+  policyNumber    String   @map("policy_number")
+  coverageAmount  Float    @map("coverage_amount")
+  premium         Float
+  status          String   @default("ACTIVE")
+  validFrom       DateTime @map("valid_from")
+  validUntil      DateTime @map("valid_until")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  booking         Booking  @relation(fields: [bookingId], references: [id])
+
+  @@index([bookingId])
+  @@index([policyNumber])
+  @@map("insurances")
+}
+
+model RewardToken {
+  id          Int      @id @default(autoincrement())
+  userId      Int      @map("user_id")
+  amount      Float
+  type        String // EARNING, REDEMPTION, BONUS
+  description String? 
+  bookingId   Int?     @map("booking_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user        User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([type])
+  @@map("reward_tokens")
+}
+
+model Agent {
+  id              Int      @id @default(autoincrement())
+  userId          Int      @unique @map("user_id")
+  licenseNumber   String   @map("license_number")
+  agency          String?
+  specialty       String? 
+  rating          Float    @default(0)
+  totalSales      Int      @default(0) @map("total_sales")
+  isVerified      Boolean  @default(false) @map("is_verified")
+  verifiedAt      DateTime? @map("verified_at")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  user            User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([licenseNumber])
+  @@map("agents")
+}
+
+model VirtualTour {
+  id          Int      @id @default(autoincrement())
+  propertyId  Int      @map("property_id")
+  tourUrl     String   @map("tour_url")
+  type        String // 360_PHOTO, VIDEO
+  title       String
+  description String? 
+  thumbnail   String?
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  property    Property @relation(fields: [propertyId], references: [id])
+
+  @@index([propertyId])
+  @@map("virtual_tours")
+}
+
+model SmartDevice {
+  id          Int      @id @default(autoincrement())
+  propertyId  Int      @map("property_id")
+  deviceType  String   @map("device_type") // LOCK, THERMOSTAT, LIGHT, CAMERA
+  deviceId    String   @map("device_id")
+  name        String
+  isOnline    Boolean  @default(false) @map("is_online")
+  metadata    Json     @default(dbgenerated("'{}'"))
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  property    Property @relation(fields: [propertyId], references: [id])
+
+  @@index([propertyId])
+  @@index([deviceType])
+  @@map("smart_devices")
+}
+
+model CorporateAccount {
+  id              Int      @id @default(autoincrement())
+  companyName     String   @map("company_name")
+  contactEmail    String   @map("contact_email")
+  contactPhone    String   @map("contact_phone")
+  address         String? 
+  discountPercent Float    @default(0) @map("discount_percent")
+  monthlyLimit    Float?   @map("monthly_limit")
+  isActive        Boolean  @default(true) @map("is_active")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@unique([contactEmail])
+  @@map("corporate_accounts")
+}
+
+model CommunityEvent {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String  
+  location    String?
+  eventDate   DateTime @map("event_date")
+  organizerId Int      @map("organizer_id")
+  maxAttendees Int?    @map("max_attendees")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  organizer   User     @relation(fields: [organizerId], references: [id])
+
+  @@index([eventDate])
+  @@map("community_events")
+}
+
+model Webhook {
+  id          Int      @id @default(autoincrement())
+  url         String
+  events      Json     @default(dbgenerated("'[]'")) // ["booking.created", "payment.completed"]
+  isActive    Boolean  @default(true) @map("is_active")
+  secret      String   @default("") // For signature verification
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([isActive])
+  @@map("webhooks")
+}
+
+model LongTermRental {
+  id              Int      @id @default(autoincrement())
+  propertyId      Int      @map("property_id")
+  tenantId        Int      @map("tenant_id")
+  monthlyRent     Float    @map("monthly_rent")
+  deposit         Float    @default(0)
+  leaseStart      DateTime @map("lease_start")
+  leaseEnd        DateTime @map("lease_end")
+  status          String   @default("ACTIVE") // ACTIVE, EXPIRED, TERMINATED
+  paymentDay      Int      @default(1) @map("payment_day") // Day of month for payment
+  autoRenew       Boolean  @default(false) @map("auto_renew")
+  terms           String? 
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  property        Property @relation(fields: [propertyId], references: [id])
+  tenant          User     @relation(fields: [tenantId], references: [id])
+
+  @@index([propertyId])
+  @@index([tenantId])
+  @@index([status])
+  @@map("long_term_rentals")
+}
+
+model MaintenanceRequest {
+  id          Int      @id @default(autoincrement())
+  propertyId  Int      @map("property_id")
+  tenantId    Int?     @map("tenant_id")
+  title       String
+  description String  
+  priority    String   @default("MEDIUM") // LOW, MEDIUM, HIGH, URGENT
+  status      String   @default("OPEN") // OPEN, IN_PROGRESS, COMPLETED, CANCELLED
+  cost        Float    @default(0)
+  photos      Json     @default(dbgenerated("'[]'"))
+  assignedTo  Int?     @map("assigned_to")
+  completedAt DateTime? @map("completed_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  property    Property @relation(fields: [propertyId], references: [id])
+  tenant      User?    @relation("MaintenanceTenant", fields: [tenantId], references: [id])
+  assignee    User?    @relation("MaintenanceAssignee", fields: [assignedTo], references: [id])
+
+  @@index([propertyId])
+  @@index([status])
+  @@index([priority])
+  @@map("maintenance_requests")
+}
+
+model Commission {
+  id              Int      @id @default(autoincrement())
+  bookingId       Int      @unique @map("booking_id")
+  propertyId      Int      @map("property_id")
+  ownerId         Int      @map("owner_id")
+  platformFee     Float    @map("platform_fee") // Platform commission
+  ownerReceives   Float    @map("owner_receives") // Amount to owner
+  totalAmount     Float    @map("total_amount")
+  commissionRate  Float    @default(5) @map("commission_rate") // Percentage
+  status          String   @default("PENDING") // PENDING, PAID, REFUNDED
+  paidAt          DateTime? @map("paid_at")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@index([ownerId])
+  @@index([status])
+  @@map("commissions")
+}
+
+model PropertyDocument {
+  id              Int       @id @default(autoincrement())
+  propertyId      Int       @map("property_id")
+  documentType    String    @map("document_type")  // UPI, LAND_TITLE, LAND_CERTIFICATE, CERTIFICATE_OF_LAND_REGISTRATION
+  filePath        String    @map("file_path")
+  fileName        String    @map("file_name")
+  fileSize        Int       @map("file_size")
+  mimeType        String    @map("mime_type")
+  status          String    @default("PENDING_REVIEW") @map("status")  // PENDING_REVIEW, APPROVED, REJECTED
+  rejectionReason String?   @map("rejection_reason")
+  uploadedAt      DateTime  @default(now()) @map("uploaded_at")
+  reviewedAt      DateTime? @map("reviewed_at")
+  reviewedBy      Int?      @map("reviewed_by")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  property        Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  reviewer        User?     @relation("DocumentReviewer", fields: [reviewedBy], references: [id])
+
+  @@index([propertyId])
+  @@index([status])
+  @@index([documentType])
+  @@map("property_documents")
+}
+
+model PropertyShare {
+  id              Int      @id @default(autoincrement())
+  propertyId      Int      @map("property_id")
+  ownerId         Int      @map("owner_id")
+  shareCount      Float    @map("share_count")
+  pricePerShare   String   @map("price_per_share") // stored as string (wei)
+  totalShares     Float    @map("total_shares")
+  sharesForSale   Float    @map("shares_for_sale")
+  isOnChain       Boolean  @default(false) @map("is_on_chain")
+  isActive        Boolean  @default(true) @map("is_active")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  property        Property @relation(fields: [propertyId], references: [id])
+  owner           User     @relation("PropertyShareOwner", fields: [ownerId], references: [id])
+  purchases       SharePurchase[]
+
+  @@index([propertyId])
+  @@index([ownerId])
+  @@map("property_shares")
+}
+
+model SharePurchase {
+  id              Int      @id @default(autoincrement())
+  propertyShareId Int      @map("property_share_id")
+  buyerId         Int      @map("buyer_id")
+  shareCount      Float    @map("share_count")
+  totalPrice      String   @map("total_price") // stored as string (wei)
+  txHash          String?  @map("tx_hash")
+  status          String   @default("COMPLETED") // PENDING, COMPLETED, FAILED
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  propertyShare   PropertyShare @relation(fields: [propertyShareId], references: [id])
+  buyer           User          @relation(fields: [buyerId], references: [id])
+
+  @@index([buyerId])
+  @@index([propertyShareId])
+  @@map("share_purchases")
+}
+
+model UserReputation {
+  id            Int      @id @default(autoincrement())
+  userId        Int      @unique @map("user_id")
+  totalScore    Int      @default(0) @map("total_score")
+  count         Int      @default(0)
+  average       Float    @default(0) // scaled by 100 (e.g. 4.50)
+  lastUpdated   DateTime? @map("last_updated")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  user          User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@map("user_reputations")
+}

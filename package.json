@@ -1,0 +1,30 @@
+{
+  "name": "kigali-real-estate-booking",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Decentralized real estate booking platform for Kigali, Rwanda",
+  "workspaces": [
+    "shared",
+    "blockchain",
+    "backend",
+    "frontend"
+  ],
+  "allowScripts": {
+    "@prisma/client": true,
+    "@prisma/engines": true,
+    "prisma": true
+  },
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "npm run dev --workspace=backend",
+    "dev:frontend": "npm run dev --workspace=frontend",
+    "dev:blockchain": "npm run node --workspace=blockchain",
+    "build": "npm run build --workspace=shared && npm run build --workspace=frontend",
+    "test:contracts": "npm run test --workspace=blockchain",
+    "lint": "npm run lint --workspace=frontend"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "typescript": "^5.3.3"
+  }
+}
