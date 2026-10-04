@@ -1,5 +1,5 @@
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -126,11 +126,11 @@ model Property {
   lng         Float
   priceEth    String         @map("price_eth")
   depositEth  String         @map("deposit_eth")
-  images      Json           @default(dbgenerated("'[]'"))
+  images      Json           @default("[]")
   bedrooms    Int            @default(1)
   bathrooms   Int            @default(1)
   area        Float          @default(0)
-  amenities   Json           @default(dbgenerated("'[]'"))
+  amenities   Json           @default("[]")
   status      PropertyStatus @default(AVAILABLE)
   isApproved  Boolean        @default(false) @map("is_approved")
   isVerified  Boolean        @default(false) @map("is_verified")
@@ -206,7 +206,7 @@ model Review {
   bookingId   Int      @unique @map("booking_id")
   rating      Int
   comment     String  
-  photos      Json     @default(dbgenerated("'[]'"))
+  photos      Json     @default("[]")
   ownerReply  String?  @map("owner_reply")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
@@ -327,7 +327,7 @@ model Payment {
   status          String   @default("PENDING") // PENDING, COMPLETED, FAILED, REFUNDED
   transactionId   String?  @unique @map("transaction_id")
   providerRef     String?  @map("provider_ref") // MoMo/Stripe reference
-  metadata        Json?    @default(dbgenerated("'{}'"))
+  metadata        Json?    @default("{}")
   paidAt          DateTime? @map("paid_at")
   refundedAt      DateTime? @map("refunded_at")
   createdAt       DateTime @default(now()) @map("created_at")
@@ -504,7 +504,7 @@ model SmartDevice {
   deviceId    String   @map("device_id")
   name        String
   isOnline    Boolean  @default(false) @map("is_online")
-  metadata    Json     @default(dbgenerated("'{}'"))
+  metadata    Json     @default("{}")
   createdAt   DateTime @default(now()) @map("created_at")
 
   property    Property @relation(fields: [propertyId], references: [id])
@@ -549,7 +549,7 @@ model CommunityEvent {
 model Webhook {
   id          Int      @id @default(autoincrement())
   url         String
-  events      Json     @default(dbgenerated("'[]'")) // ["booking.created", "payment.completed"]
+  events      Json     @default("[]") // ["booking.created", "payment.completed"]
   isActive    Boolean  @default(true) @map("is_active")
   secret      String   @default("") // For signature verification
   createdAt   DateTime @default(now()) @map("created_at")
@@ -591,7 +591,7 @@ model MaintenanceRequest {
   priority    String   @default("MEDIUM") // LOW, MEDIUM, HIGH, URGENT
   status      String   @default("OPEN") // OPEN, IN_PROGRESS, COMPLETED, CANCELLED
   cost        Float    @default(0)
-  photos      Json     @default(dbgenerated("'[]'"))
+  photos      Json     @default("[]")
   assignedTo  Int?     @map("assigned_to")
   completedAt DateTime? @map("completed_at")
   createdAt   DateTime @default(now()) @map("created_at")

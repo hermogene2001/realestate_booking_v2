@@ -1,25 +1,62 @@
+# ── Dependencies ──────────────────────────────────────────────────────────────
 node_modules/
+
+# ── Build outputs ─────────────────────────────────────────────────────────────
+dist/
+build/
+out/
+.next/
+.turbo/
+
+# ── Environment / Secrets (NEVER commit these) ────────────────────────────────
+.env
+.env.local
+.env.development
+.env.development.local
+.env.test
+.env.test.local
+.env.production
+.env.production.local
+# Keep the *.example files — they are safe reference templates
+!.env.example
+!.env.production.example
+
+# ── Database files ────────────────────────────────────────────────────────────
 *.db
 *.db-shm
 *.db-wal
-dist/
-build/
-.next/
-.env
-.env.local
-*.log
+
+# ── Uploaded files (binary user content, not tracked in git) ─────────────────
 uploads/*
 !uploads/.gitkeep
-coverage/
-cache/
-.jest-cache/
-artifacts/
-typechain-types/
-.turbo/
-backend/data/booking-agreements.json
 
-out/
+# ── Logs ──────────────────────────────────────────────────────────────────────
+*.log
+logs/
+server.err
+
+# ── Test / Coverage ───────────────────────────────────────────────────────────
+coverage/
+.jest-cache/
+
+# ── Blockchain build artefacts ────────────────────────────────────────────────
+artifacts/
+cache/
+typechain-types/
+
+# ── Mobile ────────────────────────────────────────────────────────────────────
 .dart_tool/
 .flutter-plugins
 .flutter-plugins-dependencies
 mobile_app/android/local.properties
+
+# ── IDE / OS ──────────────────────────────────────────────────────────────────
+.vscode/settings.json
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Misc generated files ──────────────────────────────────────────────────────
+backend/data/booking-agreements.json
+*.tsbuildinfo

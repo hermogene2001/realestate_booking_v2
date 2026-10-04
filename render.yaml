@@ -1,38 +1,92 @@
-services:
-  - type: web
-    name: realestate-booking-v2
-    runtime: node
-    plan: starter
-    buildCommand: npm ci && npm run build --workspace=shared && npm run build --workspace=frontend
-    startCommand: npm run start --workspace=frontend
-    healthCheckPath: /
-    envVars:
-      - key: NODE_ENV
-        value: production
-      - key: NEXT_PUBLIC_API_URL
-        value: https://realestate-booking-v2-api.onrender.com/api
+databases:
+  - name: realestate-db
+    plan: free
+    databaseName: realestate_booking
+    user: realestate_user
 
+services:
+  # ── Backend API ──────────────────────────────────────────────────────────────
   - type: web
-    name: realestate-booking-v2-api
+    name: realestate-booking-api
     runtime: node
-    plan: starter
-    buildCommand: npm ci && npm run build --workspace=backend
-    startCommand: npm run db:deploy --workspace=backend && npm run start --workspace=backend
+    plan: free
+    rootDir: backend
+    buildCommand: npm install && npm run build
+    startCommand: npm run db:deploy && npm run start
     healthCheckPath: /api/health
-    disk:
-      name: sqlite-data
-      mountPath: /var/data
-      sizeGB: 1
     envVars:
       - key: NODE_ENV
         value: production
       - key: PORT
         value: 10000
       - key: DATABASE_URL
-        value: file:/var/data/dev.db
+        fromDatabase:
+          name: realestate-db
+          property: connectionString
       - key: JWT_SECRET
         generateValue: true
       - key: JWT_REFRESH_SECRET
         generateValue: true
+      - key: JWT_EXPIRY
+        value: 15m
+      - key: JWT_REFRESH_EXPIRY
+        value: 7d
       - key: FRONTEND_URL
-        value: https://realestate-booking-v2.onrender.com
+        value: https://realestate-booking-frontend.onrender.com
+      - key: CORS_ORIGIN
+        value: https://realestate-booking-frontend.onrender.com
+      - key: UPLOAD_DIR
+        value: ./uploads
+      - key: MAX_FILE_SIZE
+        value: 5242880
+      - key: LOG_LEVEL
+        value: info
+      # Email — fill in after deploy
+      - key: SMTP_HOST
+        value: smtp.gmail.com
+      - key: SMTP_PORT
+        value: 587
+      - key: SMTP_USER
+        sync: false   # set manually in dashboard
+      - key: SMTP_PASS
+        sync: false   # set manually in dashboard
+      - key: SMTP_FROM_EMAIL
+        value: noreply@kigali-re.com
+      # AI — set whichever you use
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: OLLAMA_ENABLED
+        value: "false"
+      # Blockchain — optional, leave blank to disable
+      - key: BLOCKCHAIN_RPC_URL
+        sync: false
+      - key: CONTRACT_ADDRESS
+        sync: false
+      - key: ADMIN_WALLET_PRIVATE_KEY
+        sync: false
+
+  # ── Frontend (Next.js) ───────────────────────────────────────────────────────
+  - type: web
+    name: realestate-booking-frontend
+    runtime: node
+    plan: free
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    healthCheckPath: /
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: NEXT_PUBLIC_API_URL
+        value: https://realestate-booking-api.onrender.com/api
+      # Blockchain vars — leave blank to disable on-chain features
+      - key: NEXT_PUBLIC_CONTRACT_ADDRESS
+        sync: false
+      - key: NEXT_PUBLIC_CHAIN_ID
+        sync: false
+      - key: NEXT_PUBLIC_HARDHAT_RPC
+        sync: false

@@ -35,6 +35,11 @@ import trainingRoutes from './routes/training.routes';
 
 const app = express();
 
+// Trust reverse proxy (Render, Vercel, etc.) — required for correct IP, HTTPS detection
+if (env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1);
+}
+
 // Security & Tracking Middleware (must be first)
 app.use(requestIdMiddleware);
 
@@ -42,9 +47,12 @@ app.use(requestIdMiddleware);
 const allowedOrigins = env.FRONTEND_URL.split(',').map(s => s.trim()).filter(Boolean);
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (server-to-server, curl, etc.)
-    if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
-    callback(null, true); // In development, allow all origins
+    // Allow requests with no origin (server-to-server, curl, Render health checks, etc.)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    // In development allow everything; in production restrict to listed origins
+    if (env.NODE_ENV !== 'production') return callback(null, true);
+    callback(new Error(`CORS: origin ${origin} not allowed`), false);
   },
   credentials: true,
 }));
@@ -56,7 +64,12 @@ app.use('/uploads', express.static(path.resolve(env.UPLOAD_DIR)));
 
 // Health check
 app.get('/api/health', (_req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  res.json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    env: env.NODE_ENV,
+    version: process.env.npm_package_version || '1.0.0',
+  });
 });
 
 // API routes
